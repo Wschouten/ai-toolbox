@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Toolbox</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #f5f5f3;
+    color: #1a1a1a;
+    padding: 2rem 1.5rem 4rem;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header { padding: 1rem 0 2rem; }
+  .header h1 { font-size: 28px; font-weight: 600; color: #111; letter-spacing: -0.3px; }
+  .header p { font-size: 14px; color: #666; margin-top: 6px; }
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+  .filter-btn {
+    font-size: 13px; padding: 5px 14px; border-radius: 20px;
+    border: 1px solid #ddd; background: #fff;
+    color: #555; cursor: pointer; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .filter-btn:hover { border-color: #aaa; color: #111; }
+  .filter-btn.active { background: #111; color: #fff; border-color: #111; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .tool-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .tool-card:hover { border-color: #ccc; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .card-summary { padding: 1rem 1.1rem; cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
+  .card-top { display: flex; align-items: center; gap: 10px; }
+  .tool-emoji { font-size: 20px; line-height: 1; }
+  .tool-name { font-size: 15px; font-weight: 600; color: #111; flex: 1; }
+  .chevron { font-size: 11px; color: #aaa; transition: transform 0.2s; }
+  .tool-card.open .chevron { transform: rotate(180deg); }
+  .tool-short { font-size: 13px; color: #666; line-height: 1.5; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .tag { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 500; }
+  .tag-schrijven      { background: #EEEDFE; color: #3C3489; }
+  .tag-research       { background: #E6F1FB; color: #0C447C; }
+  .tag-meetings       { background: #EAF3DE; color: #27500A; }
+  .tag-automatisering { background: #FAEEDA; color: #633806; }
+  .tag-presentaties   { background: #FAECE7; color: #712B13; }
+  .tag-vertalen       { background: #E1F5EE; color: #085041; }
+  .tag-beeld-video    { background: #FBEAF0; color: #72243E; }
+  .tag-audio          { background: #FCEBEB; color: #791F1F; }
+  .tag-productiviteit { background: #F1EFE8; color: #444441; }
+  .tag-diagrams       { background: #EAF3DE; color: #27500A; }
+  .free-badge { font-size: 11px; color: #999; }
+  .card-detail {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease;
+    border-top: 0px solid #f0f0f0;
+  }
+  .tool-card.open .card-detail { max-height: 400px; border-top-width: 1px; }
+  .detail-inner { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 12px; }
+  .detail-inner p { font-size: 13px; color: #555; line-height: 1.6; }
+  .use-cases { display: flex; flex-direction: column; gap: 6px; }
+  .use-case { font-size: 12px; color: #666; display: flex; gap: 6px; align-items: flex-start; }
+  .use-case-dot { width: 4px; height: 4px; border-radius: 50%; background: #ccc; margin-top: 5px; flex-shrink: 0; }
+  .visit-btn {
+    display: inline-block; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #e0e0e0;
+    color: #333; text-decoration: none;
+    background: #f8f8f8; font-family: inherit;
+    transition: background 0.15s; width: fit-content;
+  }
+  .visit-btn:hover { background: #efefef; }
+  .footer { text-align: center; margin-top: 3rem; font-size: 12px; color: #bbb; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🤖 AI Toolbox</h1>
+    <p>Praktische AI-tools voor je dagelijkse werkzaamheden — klik op een tool voor uitleg en voorbeelden</p>
+  </div>
+  <div class="filter-bar" id="filters"></div>
+  <div class="grid" id="grid"></div>
+  <div class="footer">Beheerd door het AI Inspiratie Team &middot; Bijgewerkt 2025</div>
+</div>
+
+<script>
+const tools = [
+  {
+    name: "Claude", emoji: "🤖", tag: "schrijven", free: true, url: "https://claude.ai",
+    short: "AI-assistent voor schrijven, analyseren en samenvatten.",
+    detail: "Claude is een AI-chatassistent van Anthropic. Je kunt er teksten mee schrijven, herschrijven of samenvatten, complexe documenten analyseren, ideeën uitwerken en vragen stellen over vrijwel elk onderwerp.",
+    usecases: ["E-mails en rapporten opstellen of verbeteren", "Lange documenten samenvatten in kernpunten", "Brainstormen over nieuwe ideeën of aanpakken"]
+  },
+  {
+    name: "ChatGPT", emoji: "💬", tag: "schrijven", free: true, url: "https://chat.openai.com",
+    short: "Veelzijdige AI-assistent van OpenAI voor tekst en meer.",
+    detail: "ChatGPT van OpenAI is een van de bekendste AI-assistenten. Het ondersteunt tekst, afbeeldingen, code en data-analyse. De Plus-versie heeft toegang tot GPT-4 en plugins voor extra mogelijkheden.",
+    usecases: ["Schrijven, vertalen en herschrijven van teksten", "Code genereren of debuggen", "Data uploaden en laten analyseren via de code interpreter"]
+  },
+  {
+    name: "Perplexity", emoji: "🔍", tag: "research", free: true, url: "https://www.perplexity.ai",
+    short: "AI-zoekmachine met directe bronvermelding.",
+    detail: "Perplexity combineert een zoekmachine met AI. Je stelt een vraag en krijgt een direct antwoord met bronvermeldingen, zodat je altijd kunt controleren waar de informatie vandaan komt.",
+    usecases: ["Snel onderzoek doen naar een onderwerp", "Actuele informatie opzoeken met bronnen", "Alternatief voor Google waarbij je direct antwoord krijgt"]
+  },
+  {
+    name: "NotebookLM", emoji: "📓", tag: "research", free: true, url: "https://notebooklm.google.com",
+    short: "Laad eigen documenten in en stel er vragen over.",
+    detail: "NotebookLM van Google laat je eigen documenten, PDF's, slides of websites uploaden. De AI is uitsluitend gebaseerd op jouw bronnen. Bijzonder: het kan er automatisch een podcast van genereren.",
+    usecases: ["Vragen stellen aan interne rapporten of beleidsdocumenten", "Samenvattingen maken van lange PDF's", "Een audio-podcast laten genereren van je bronmateriaal"]
+  },
+  {
+    name: "DeepL", emoji: "🌐", tag: "vertalen", free: true, url: "https://www.deepl.com",
+    short: "De nauwkeurigste vertaaltool, beter dan Google Translate.",
+    detail: "DeepL staat bekend om zijn natuurlijke vertalingen die nuance en toon goed bewaren. DeepL Write helpt ook met het verbeteren van schrijfstijl in vreemde talen.",
+    usecases: ["Zakelijke e-mails vertalen naar Engels of Duits", "Documenten in bulk vertalen via DeepL Pro", "Schrijfstijl verbeteren in een vreemde taal"]
+  },
+  {
+    name: "Fireflies", emoji: "🎙️", tag: "meetings", free: true, url: "https://fireflies.ai",
+    short: "Neemt vergaderingen op en maakt automatisch samenvattingen.",
+    detail: "Fireflies.ai sluit automatisch aan op je Teams- of Zoom-meetings, transcribeert alles en maakt een gestructureerde samenvatting met actiepunten.",
+    usecases: ["Actiepunten automatisch vastleggen na een meeting", "Terugkijken wat er besproken is zonder de opname te bekijken", "Zoeken naar specifieke uitspraken in een transcript"]
+  },
+  {
+    name: "Otter.ai", emoji: "📝", tag: "meetings", free: true, url: "https://otter.ai",
+    short: "Live transcriptie van meetings met sprekerherkenning.",
+    detail: "Otter.ai transcribeert gesprekken en meetings in real-time en herkent verschillende sprekers. Het integreert direct met Google Meet, Zoom en Teams.",
+    usecases: ["Live meeschrijven tijdens een meeting", "Notulen genereren vanuit een transcript", "Interviews of gesprekken uitschrijven"]
+  },
+  {
+    name: "Gamma", emoji: "✨", tag: "presentaties", free: true, url: "https://gamma.app",
+    short: "Professionele presentaties maken via AI in minuten.",
+    detail: "Gamma genereert volledige presentaties, documenten of webpagina's op basis van een tekstprompt of bestaande content. Het resultaat is direct mooi opgemaakt en aanpasbaar.",
+    usecases: ["Snel een presentatie opzetten vanuit een briefing", "Bestaande tekst omzetten naar slides", "Interne updates of voorstellen visueel presenteren"]
+  },
+  {
+    name: "Napkin", emoji: "🖊️", tag: "diagrams", free: true, url: "https://napkin.ai",
+    short: "Zet tekst automatisch om naar visuele diagrammen.",
+    detail: "Napkin analyseert je tekst en genereert er automatisch passende visuals bij: flowcharts, vergelijkingen, tijdlijnen of conceptdiagrammen. Ideaal als je geen designer bent.",
+    usecases: ["Processen visueel maken vanuit een tekstbeschrijving", "Infographics maken voor presentaties of rapporten", "Complexe concepten vereenvoudigen met een diagram"]
+  },
+  {
+    name: "Notion AI", emoji: "🗂️", tag: "productiviteit", free: false, url: "https://www.notion.so/product/ai",
+    short: "AI ingebouwd in Notion voor schrijven en kennisbeheer.",
+    detail: "Notion AI zit direct in je Notion-werkruimte. Je kunt ermee schrijven, samenvatten, vertalen en vragen stellen aan je eigen kennisbank.",
+    usecases: ["Notities samenvatten of uitbreiden", "Vragen stellen aan je interne wiki of kennisbank", "Automatisch actiepunten uit meeting-notes halen"]
+  },
+  {
+    name: "Make", emoji: "⚡", tag: "automatisering", free: true, url: "https://www.make.com",
+    short: "Automatiseer workflows tussen apps zonder code.",
+    detail: "Make (voorheen Integromat) is een visuele automatiseringstool. Je verbindt apps als Teams, Gmail, Notion en HubSpot via scenario's zonder te programmeren.",
+    usecases: ["Automatisch taken aanmaken in een projecttool na een e-mail", "Data van formulieren doorsturen naar een spreadsheet", "Notificaties sturen op basis van triggers in andere apps"]
+  },
+  {
+    name: "Runway", emoji: "🎬", tag: "beeld-video", free: true, url: "https://runwayml.com",
+    short: "Genereer en bewerk video's met AI.",
+    detail: "Runway is een van de krachtigste AI-videotools. Je kunt tekst of beelden omzetten naar video, achtergronden verwijderen en video's bewerken via tekstcommando's.",
+    usecases: ["Korte promovideo's of social content maken", "Achtergronden automatisch verwijderen uit video", "Bestaande video's uitbreiden of transformeren"]
+  },
+  {
+    name: "ElevenLabs", emoji: "🔊", tag: "audio", free: true, url: "https://elevenlabs.io",
+    short: "Realistische AI-stemgeneratie voor audio en video.",
+    detail: "ElevenLabs genereert menselijk klinkende stemmen op basis van tekst. Je kunt bestaande stemmen klonen of kiezen uit een bibliotheek. Populair voor voiceovers en e-learningcontent.",
+    usecases: ["Voiceovers inspreken voor video's of presentaties", "Instructievideo's of e-learning audiofragmenten maken", "Meertalige versies van content genereren"]
+  },
+  {
+    name: "Midjourney", emoji: "🎨", tag: "beeld-video", free: false, url: "https://www.midjourney.com",
+    short: "Genereer verbluffende beelden via tekstbeschrijving.",
+    detail: "Midjourney is de toonaangevende AI-beeldgenerator. Je beschrijft wat je wil zien en krijgt in seconden fotorealistische of artistieke afbeeldingen terug.",
+    usecases: ["Visualisaties maken voor presentaties of campagnes", "Conceptbeelden genereren voor een nieuw product of idee", "Unieke illustraties maken zonder designer"]
+  },
+  {
+    name: "Descript", emoji: "🎧", tag: "audio", free: true, url: "https://www.descript.com",
+    short: "Bewerk audio en video via tekst — geen videosoftware nodig.",
+    detail: "Descript transcribeert je video of audio en laat je de opname bewerken door simpelweg de tekst aan te passen. Verwijder een zin uit de tekst en de bijbehorende clip wordt automatisch geknipt.",
+    usecases: ["Podcasts of interviews snel monteren", "Filler words (uhm, eh) automatisch verwijderen", "Correcties inspreken via AI-stemkloon"]
+  },
+  {
+    name: "Stitch", emoji: "🧵", tag: "beeld-video", free: true, url: "https://stitch.withgoogle.com",
+    short: "Google's AI-tool voor UI-ontwerpen en prototypes via prompt.",
+    detail: "Stitch van Google laat je via tekstprompts direct schermontwerpen en UI-prototypes genereren. Handig voor iedereen die een app-idee snel wil visualiseren zonder ontwerpervaring.",
+    usecases: ["Snel een app-scherm of websiteontwerp schetsen", "UI-ideeën visualiseren voor een presentatie of voorstel", "Prototypes genereren om te bespreken met een developer"]
+  },
+];
+
+const categories = ["Alles", ...new Set(tools.map(t => t.tag))];
+let active = "Alles";
+
+function renderFilters() {
+  const el = document.getElementById("filters");
+  el.innerHTML = "";
+  categories.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (cat === active ? " active" : "");
+    btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+    btn.onclick = () => { active = cat; renderFilters(); renderGrid(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderGrid() {
+  const filtered = active === "Alles" ? tools : tools.filter(t => t.tag === active);
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  filtered.forEach(tool => {
+    const card = document.createElement("div");
+    card.className = "tool-card";
+    const ucHTML = tool.usecases.map(u =>
+      `<div class="use-case"><div class="use-case-dot"></div><span>${u}</span></div>`
+    ).join("");
+    card.innerHTML = `
+      <div class="card-summary">
+        <div class="card-top">
+          <span class="tool-emoji">${tool.emoji}</span>
+          <span class="tool-name">${tool.name}</span>
+          <span class="chevron">▼</span>
+        </div>
+        <p class="tool-short">${tool.short}</p>
+        <div class="card-footer">
+          <span class="tag tag-${tool.tag}">${tool.tag}</span>
+          <span class="free-badge">${tool.free ? "freemium" : "betaald"}</span>
+        </div>
+      </div>
+      <div class="card-detail">
+        <div class="detail-inner">
+          <p>${tool.detail}</p>
+          <div class="use-cases">${ucHTML}</div>
+          <a class="visit-btn" href="${tool.url}" target="_blank">Bezoek ${tool.name} →</a>
+        </div>
+      </div>
+    `;
+    card.querySelector(".card-summary").addEventListener("click", () => {
+      const isOpen = card.classList.contains("open");
+      document.querySelectorAll(".tool-card.open").forEach(c => c.classList.remove("open"));
+      if (!isOpen) card.classList.add("open");
+    });
+    grid.appendChild(card);
+  });
+}
+
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>
